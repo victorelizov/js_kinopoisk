@@ -73,11 +73,11 @@ function addEventMedia(){
 function showFullInfo(){
     let url = '';
     if(this.dataset.type === 'movie') {
-        url = `https://api.themoviedb.org/3/movie/${this.dataset.id}?api_key=c2388c2b1dae50b4409c8ed48914c075&language=ru`
+        url = `https://api.themoviedb.org/3/movie/${this.dataset.id}?api_key=c2388c2b1dae50b4409c8ed48914c075&language=ru`;
     } else if(this.dataset.type === 'tv') {
         url = `https://api.themoviedb.org/3/tv/${this.dataset.id}?api_key=c2388c2b1dae50b4409c8ed48914c075&language=ru`;
     } else {
-        inner = '<h2 class="col-12 text-center text-info">error occured, repeat later</h2>';
+        movie.innerHTML = '<h2 class="col-12 text-center text-info">error occured, repeat later</h2>';
     }
     
     fetch(url)
@@ -90,9 +90,10 @@ function showFullInfo(){
         .then(function(output) {
             // console.log(output);
             genresItem = "";
-            for(i = 0; i < output.genres.length; i++) {
-                genresItem += output.genres[i].name + " ";
-            }
+            output.genres.forEach((genre) => {
+                genresItem += genre.name + " ";
+            })
+            
             movie.innerHTML = `
                 <h4 class="col-12 text-center text-success">${output.name || output.title}</h4>
                 <div class="col-4">
@@ -109,14 +110,53 @@ function showFullInfo(){
 
                     <p> Жанры: ${genresItem}</p>
                     <p> Описание: ${output.overview}</p>
+
+                    <br>
+                    <div class="youtube"></div>
                     
                 </div>
             `;
+            // console.log(output);
+            let mediaType = output.title ? 'movie' : 'tv';
+            getVideo(mediaType, output.id);
+
         })
         .catch(function(reason){
             movie.innerHTML = 'Oops, something wrong';
+            console.error(reason || reason.status);
+        });
+        
+}
+
+function getVideo(type, id) {
+    let youtube = movie.querySelector('.youtube');
+
+    fetch(`https://api.themoviedb.org/3/${type}/${id}/videos?api_key=c2388c2b1dae50b4409c8ed48914c075&language=ru`)
+        .then(function(value){
+            if (value.status !== 200) {
+                return Promise.reject(value);
+            }
+            return value.json();
+        })
+        .then((output) => {
+            console.log(output);
+
+            let videoFrame = '<h5 class="text-info">Yotube trailers:</h5>';
+            if(output.results.length === 0) {
+                videoFrame = '<p>Трейлеры отсутствуют!</p>';
+            }
+            output.results.forEach((item) => {
+                videoFrame += `<iframe width="560" height="315" src="https://www.youtube.com/embed/${item.key}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            })
+
+            youtube.innerHTML = videoFrame;
+        })
+        .catch((reason) => {
+            youtube.innerHTML = 'Видео отсутствует';
             console.error('error: ' + reason.status);
         });
+
+    
 }
 
 
@@ -158,3 +198,4 @@ document.addEventListener('DOMContentLoaded', function(){
             console.error('error: ' + reason.status);
         });
 });
+
